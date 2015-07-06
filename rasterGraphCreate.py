@@ -1,5 +1,6 @@
-from pylab import *
-from graph_tool.all import *
+from graph_tool import *
+from graph_tool.topology import *
+import numpy as np
 
 
 '''
@@ -51,18 +52,32 @@ def createGraph(arr, weightFunction=None):
         for row in range(1, numRows):
             v = g.add_vertex()
             g.add_edge(v, g.vertex(getVertexIndex(row-1,0,numCols)))
+            g.add_edge(v, g.vertex(getVertexIndex(row-1,1,numCols)))
 
-            for col in range(1, numCols):
+            for col in range(1, numCols-1):
                 v = g.add_vertex()
                 g.add_edge(v, g.vertex(getVertexIndex(row, col-1,numCols)))
                 g.add_edge(v, g.vertex(getVertexIndex(row-1, col-1,numCols)))
                 g.add_edge(v, g.vertex(getVertexIndex(row-1, col,numCols)))
+                e = g.add_edge(v, g.vertex(getVertexIndex(row-1, col+1,numCols)))
+                #print row, col, getVertexIndex(row,col,numCols)
+                #print [vert for vert in v.all_neighbours()]
+
+            # Add last column
+            col = col + 1
+            v = g.add_vertex()
+            e = g.add_edge(v, g.vertex(getVertexIndex(row, col-1,numCols)))
+            e = g.add_edge(v, g.vertex(getVertexIndex(row-1, col-1,numCols)))
+            e = g.add_edge(v, g.vertex(getVertexIndex(row-1, col,numCols)))
+            print row, col, getVertexIndex(row,col,numCols)
+            print [vert for vert in v.all_neighbours()]
 
 
     else:
         edge_cost = g.new_edge_property("double")
         g.edge_properties.edgeCost = edge_cost
 
+        # Add first row
         for i in range(1, numCols):
             g.add_vertex()
             e = g.add_edge(g.vertex(getVertexIndex(0,i-1,numCols)), g.vertex(getVertexIndex(0,i,numCols)))
@@ -74,9 +89,11 @@ def createGraph(arr, weightFunction=None):
             v = g.add_vertex()
             e = g.add_edge(v, g.vertex(getVertexIndex(row-1,0,numCols)))
             g.ep.edgeCost[e] = weightFunction(arr, (row, 0), (row-1, 0))
+            e = g.add_edge(v, g.vertex(getVertexIndex(row-1,1,numCols)))
+            g.ep.edgeCost[e] = weightFunction(arr, (row, 0), (row-1, 1))
 
-
-            for col in range(1, numCols):
+            # Add first n-1 columns
+            for col in range(1, numCols-1):
                 v = g.add_vertex()
                 e = g.add_edge(v, g.vertex(getVertexIndex(row, col-1,numCols)))
                 g.ep.edgeCost[e] = weightFunction(arr, (row, col), (row, col-1))
@@ -84,19 +101,41 @@ def createGraph(arr, weightFunction=None):
                 g.ep.edgeCost[e] = weightFunction(arr, (row, col), (row-1, col-1))
                 e = g.add_edge(v, g.vertex(getVertexIndex(row-1, col,numCols)))
                 g.ep.edgeCost[e] = weightFunction(arr, (row, col), (row-1, col))
+                e = g.add_edge(v, g.vertex(getVertexIndex(row-1, col+1,numCols)))
+                g.ep.edgeCost[e] = weightFunction(arr, (row, col), (row-1, col+1))
 
+            # Add last column
+            v = g.add_vertex()
+            e = g.add_edge(v, g.vertex(getVertexIndex(row, col-1,numCols)))
+            g.ep.edgeCost[e] = weightFunction(arr, (row, col), (row, col-1))
+            e = g.add_edge(v, g.vertex(getVertexIndex(row-1, col-1,numCols)))
+            g.ep.edgeCost[e] = weightFunction(arr, (row, col), (row-1, col-1))
+            e = g.add_edge(v, g.vertex(getVertexIndex(row-1, col,numCols)))
+            g.ep.edgeCost[e] = weightFunction(arr, (row, col), (row-1, col))
 
     return g
 
 # Main function for testing
 
 if __name__ == "__main__":
-    
-    a = arange(16)
-    a = a.reshape(4,4)
+   
+    from graph_tool.draw import *
+    a = np.arange(9)
+    a = a.reshape(3,3)
 
     g = createGraph(a)
 
+    print 'Neighbours of 4:'
+    v = g.vertex(4)
+    print [vert for vert in v.all_neighbours()]
+
+    print 'Neighbours of 7:'
+    v = g.vertex(7)
+    print [vert for vert in v.all_neighbours()]
+
+    print 'Neighbours of 5:'
+    v = g.vertex(5)
+    print [vert for vert in v.all_neighbours()]
     graph_draw(g, vorder=g.vertex_index, vertex_text=g.vertex_index, vertex_font_size=18, output_size=(600,600), output='test.png')
 
     weights = 10*np.random.random(a.shape)
@@ -110,3 +149,20 @@ if __name__ == "__main__":
     graph_draw(g, vorder=g.vertex_index, vertex_text=g.vertex_index, vertex_font_size=18, edge_pen_width = g.ep.edgeCost,\
                output_size=(600,600), output='test2.png')
 
+    vlist, elist = shortest_path(g, g.vertex(4), g.vertex(8), weights=g.ep.edgeCost)
+
+    shortestPathFilter = g.new_edge_property("bool")
+    shortestPathFilterV = g.new_vertex_property("bool")
+
+    for edge in elist:
+        shortestPathFilter[edge] = True
+
+
+    for vertex in vlist:
+        shortestPathFilterV[vertex] = True
+
+    g.set_edge_filter(shortestPathFilter)
+    g.set_vertex_filter(shortestPathFilterV)
+
+    graph_draw(g, vorder=g.vertex_index, vertex_text=g.vertex_index, vertex_font_size=18, edge_pen_width = g.ep.edgeCost,\
+               output_size=(600,600), output='test3.png')
