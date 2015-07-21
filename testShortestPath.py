@@ -13,6 +13,9 @@ if __name__ == "__main__":
     startNode1 = 90
     destNode1 = 8008
 
+    startNode2 = 30
+    destNode2 = 9080
+
     raster = np.zeros((arraySize,arraySize))
 
     measureX = np.linspace(0,5, arraySize)
@@ -53,6 +56,7 @@ if __name__ == "__main__":
 
     vlist, elist = shortest_path(g, g.vertex(startNode1), g.vertex(destNode1), weights=g.ep.edgeCost)
     print g.vertex(4)
+    
     print [vert for vert in g.vertex(destNode).out_neighbours()]
 
     xs = []
@@ -67,6 +71,27 @@ if __name__ == "__main__":
     pyplot.hold(True)
 
     pyplot.plot(xs, ys,'red',linewidth=2)
+
+
+    pyplot.xlim(-1,arraySize)
+    pyplot.ylim(0,arraySize)
+    pyplot.show()
+
+
+    vlist, elist = shortest_path(g, g.vertex(startNode2), g.vertex(destNode2), weights=g.ep.edgeCost)
+    
+    xs = []
+    ys = []
+    for vertex in vlist:
+        index = g.vertex_index[vertex]
+        row,col = getRowCol(index, arraySize)
+
+        xs.append(row)
+        ys.append(col)
+
+    pyplot.hold(True)
+
+    pyplot.plot(xs, ys,'k',linewidth=2)
 
 
     pyplot.xlim(-1,arraySize)

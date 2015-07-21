@@ -115,13 +115,34 @@ def createGraph(arr, weightFunction=None):
 
     return g
 
+
+'''
+given a graph property gp, create an array corresponding to it.
+This will only make sense if the graph has been created from a
+raster, and all vertices in the graph have nonzero values of the
+property
+'''
+
+def createRaster(graph, graphProp, numRows, numCols):
+
+    raster = np.zeros((numRows, numCols))
+
+    propArray = graphProp.get_array()
+
+    for row in range(numRows):
+        for col in range(numCols):
+            index = getVertexIndex(row, col, numCols)
+            raster[row, col] = propArray[index]
+
+    return raster
+
 # Main function for testing
 
 if __name__ == "__main__":
    
     from graph_tool.draw import *
-    a = np.arange(9)
-    a = a.reshape(3,3)
+    a = np.arange(16)
+    a = a.reshape(4,4)
 
     g = createGraph(a)
 
@@ -136,7 +157,8 @@ if __name__ == "__main__":
     print 'Neighbours of 5:'
     v = g.vertex(5)
     print [vert for vert in v.all_neighbours()]
-    graph_draw(g, vorder=g.vertex_index, vertex_text=g.vertex_index, vertex_font_size=18, output_size=(600,600), output='test.png')
+    graph_draw(g, vorder=g.vertex_index, vertex_text=g.vertex_index, vertex_font_size=72,
+               output_size=(2400,2400), output='test.png')
 
     weights = 10*np.random.random(a.shape)
     print weights
@@ -149,7 +171,7 @@ if __name__ == "__main__":
     graph_draw(g, vorder=g.vertex_index, vertex_text=g.vertex_index, vertex_font_size=18, edge_pen_width = g.ep.edgeCost,\
                output_size=(600,600), output='test2.png')
 
-    vlist, elist = shortest_path(g, g.vertex(4), g.vertex(8), weights=g.ep.edgeCost)
+    vlist, elist = shortest_path(g, g.vertex(4), g.vertex(14), weights=g.ep.edgeCost)
 
     shortestPathFilter = g.new_edge_property("bool")
     shortestPathFilterV = g.new_vertex_property("bool")
